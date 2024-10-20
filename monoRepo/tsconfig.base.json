@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@mono-repo/shared-models": ["shared-models/src/index.ts"],
       "@shared/*": ["shared/src/*"]
     },
     "strict": true
