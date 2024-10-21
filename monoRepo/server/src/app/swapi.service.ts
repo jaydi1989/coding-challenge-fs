@@ -1,15 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import { PersonSchema, Person } from 'shared-models/src/lib/schemas';
-
-interface CacheItem {
-  data: Person[];
-  total: number;
-}
+import { Person, CacheItem, PeopleSchema } from 'shared/src/lib/schemas';
 
 @Injectable()
 export class SwapiService {
-  private apiUrl = 'https://swapi.dev/api/people';
+  private apiUrl = 'https://www.swapi.tech/api/people';
   private cache: Record<number, CacheItem> = {}; // Specify the cache type here
 
   async getPeople(page = 1): Promise<CacheItem> {
@@ -19,22 +14,28 @@ export class SwapiService {
 
     const response = await axios.get(`${this.apiUrl}/?page=${page}`);
     const people = response.data.results;
-
+    console.log('PEOPLE', people);
+    // Fetch and enrich each person's homeworld data
     const enrichedPeople = await Promise.all(
       people.map(async (person: Person) => {
+        // Fetch the homeworld using the URL provided in person.homeworld
         const homeworldResponse = await axios.get(person.homeworld);
+
         const enrichedPerson = {
           ...person,
-          homeworld: homeworldResponse.data,
+          homeworldDetails: {
+            name: homeworldResponse.data.name,
+            terrain: homeworldResponse.data.terrain,
+          },
         };
 
         // Validate using Zod schema
-        return PersonSchema.parse({
+        return PeopleSchema.parse({
           name: enrichedPerson.name,
           birth_year: enrichedPerson.birth_year,
           homeworld: {
-            name: enrichedPerson.homeworld.name,
-            terrain: enrichedPerson.homeworld.terrain,
+            name: enrichedPerson.homeworldDetails.name,
+            terrain: enrichedPerson.homeworldDetails.terrain,
           },
         });
       })
