@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { Component, HostListener } from '@angular/core';
+import { Component } from '@angular/core';
+import { FilterService } from '../services/filter.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-header',
@@ -10,15 +12,13 @@ import { Component, HostListener } from '@angular/core';
   styleUrl: './header.component.css',
 })
 export class HeaderComponent {
-  screenWidth: number = window.innerWidth;
-  isModalOpen = false;
+  filter$: Observable<string>; // Observable to hold the filter from the service
 
-  @HostListener('window:resize', ['$event'])
-  onResize() {
-    this.screenWidth = window.innerWidth;
+  constructor(private filterService: FilterService) {
+    this.filter$ = this.filterService.filter$; // Assign the filter observable from the service
   }
-
-  isMobileSize(): boolean {
-    return this.screenWidth <= 1024;
+  onFilterChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.filterService.setFilter(value); // Update the filter value in the service
   }
 }

@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { PeopleAppData } from '../../../../shared/src/lib/schemas';
+import { PeopleAppData, Person } from '../../../../shared/src/lib/schemas';
 
 @Injectable({
   providedIn: 'root',
@@ -14,5 +14,8 @@ export class SwapiService {
 
   getPeople(page: number): Observable<PeopleAppData> {
     return this.http.get<PeopleAppData>(`${this.apiUrl}?page=${page}`);
+  }
+  getPeopleByName(name: string): Observable<PeopleAppData> {
+    return this.http.get<PeopleAppData>(`${this.apiUrl}/search/?name=${name}`);
   }
 }

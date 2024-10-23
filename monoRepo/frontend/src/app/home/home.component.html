@@ -15,5 +15,8 @@
     {{ isLoading ? 'Data is loading...' : '' }}
   </div>
 
-  <app-people *ngFor="let person of people" [person]="person"></app-people>
+  <app-people
+    *ngFor="let person of filteredPeople"
+    [person]="person"
+  ></app-people>
 </div>

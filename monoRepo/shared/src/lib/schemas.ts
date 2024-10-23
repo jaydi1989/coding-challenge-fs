@@ -31,6 +31,7 @@ export const PersonSchema = z.object({
 export const PeopleAppData = z.object({
   people: z.array(PersonSchema),
   total: z.number(),
+  message: z.string().optional(),
 });
 
 export const PeopleRessourcesSchema = z.object({
@@ -59,6 +60,11 @@ export const DatailedPeopleResponse = z.object({
   url: z.string(),
 });
 
+export const PeopleNameResponse = z.object({
+  message: z.string(),
+  result: z.array(PeopleRessourcesSchema),
+});
+
 export type HomeWorldResponse = z.infer<typeof HomeWorldResponse>;
 export const PeopleSchema = z.array(PersonSchema);
 export type PeopleAppData = z.infer<typeof PeopleAppData>;
@@ -66,3 +72,4 @@ export type Person = z.infer<typeof PersonSchema>;
 export type Homeworld = z.infer<typeof HomeworldSchema>;
 export type PeopleResponse = z.infer<typeof PeopleResponseSchema>;
 export type DetailedPersonResponse = z.infer<typeof DatailedPeopleResponse>;
+export type PeopleNameResponse = z.infer<typeof PeopleNameResponse>;

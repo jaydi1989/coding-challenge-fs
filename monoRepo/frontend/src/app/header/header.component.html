@@ -12,7 +12,13 @@
           class="flex items-center px-3 py-2 border rounded-lg cursor-pointer"
         >
           <mat-icon fontIcon="search"></mat-icon>
-          <input class="flex-grow" placeholder="Filter by name" />
+          <input
+            class="flex-grow"
+            placeholder="Filter by name"
+            [value]="filter$ | async"
+            (input)="onFilterChange($event)"
+            type="text"
+          />
         </div>
       </div>
     </div>
