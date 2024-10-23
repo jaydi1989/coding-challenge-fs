@@ -44,7 +44,8 @@ export class HomeComponent implements OnInit {
 
   filterPeople(filter: string): void {
     if (!filter) {
-      this.filteredPeople = this.people; // Reset to all people if no filter
+      this.page = 1;
+      this.filteredPeople = this.people;
     } else {
       this.filteredPeople = this.people.filter((person) =>
         person.name.toLowerCase().includes(filter.toLowerCase())
