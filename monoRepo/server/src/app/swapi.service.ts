@@ -1,51 +1,116 @@
-import { Injectable } from '@nestjs/common';
-import axios from 'axios';
-import { Person, CacheItem, PeopleSchema } from 'shared/src/lib/schemas';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { lastValueFrom } from 'rxjs';
+import { HttpService } from '@nestjs/axios';
+import {
+  Person,
+  PeopleAppData,
+  PeopleResponse,
+  DetailedPersonResponse,
+  Homeworld,
+  HomeWorldResponse,
+} from 'shared/src/lib/schemas';
+import { map, catchError } from 'rxjs/operators';
 
 @Injectable()
 export class SwapiService {
   private apiUrl = 'https://www.swapi.tech/api/people';
-  private cache: Record<number, CacheItem> = {}; // Specify the cache type here
+  FETCH_LIMIT = 10;
+  constructor(private readonly httpService: HttpService) {}
 
-  async getPeople(page = 1): Promise<CacheItem> {
-    if (this.cache[page]) {
-      return this.cache[page];
+  private async getHomeWorldName(url: string): Promise<HomeWorldResponse> {
+    try {
+      const homeworldInfo: HomeWorldResponse = await lastValueFrom(
+        this.httpService.get(url).pipe(
+          map((res) => res.data.result.properties),
+          catchError((error) => {
+            console.error('Error fetching homeworld:', error.message);
+            throw new HttpException(
+              'Failed to fetch homeworld',
+              HttpStatus.BAD_REQUEST
+            );
+          })
+        )
+      );
+      return homeworldInfo;
+    } catch (e: any) {
+      console.log(e);
+      throw new HttpException(
+        'Failed to fetch homeworld',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
+  }
 
-    const response = await axios.get(`${this.apiUrl}/?page=${page}`);
-    const people = response.data.results;
-    console.log('PEOPLE', people);
-    // Fetch and enrich each person's homeworld data
-    const enrichedPeople = await Promise.all(
-      people.map(async (person: Person) => {
-        // Fetch the homeworld using the URL provided in person.homeworld
-        const homeworldResponse = await axios.get(person.homeworld);
+  private async getPersonDetails(uid: number): Promise<Person> {
+    try {
+      const personDetails: DetailedPersonResponse = await lastValueFrom(
+        this.httpService.get(`https://www.swapi.tech/api/people/${uid}`).pipe(
+          map((res) => res.data.result.properties),
+          catchError((error) => {
+            console.error('Error fetching person:', error.message);
+            throw new HttpException(
+              'Failed to fetch person',
+              HttpStatus.BAD_REQUEST
+            );
+          })
+        )
+      );
+      const homeworld = await this.getHomeWorldName(personDetails.homeworld);
+      const { name, birth_year } = personDetails;
 
-        const enrichedPerson = {
-          ...person,
-          homeworldDetails: {
-            name: homeworldResponse.data.name,
-            terrain: homeworldResponse.data.terrain,
-          },
-        };
+      const personFullData = {
+        uid,
+        name,
+        birth_year,
+        homeworld: homeworld.name,
+        terrain: homeworld.terrain,
+      };
+      return personFullData;
+    } catch (e: any) {
+      throw new HttpException(
+        'Failed to fetch person',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 
-        // Validate using Zod schema
-        return PeopleSchema.parse({
-          name: enrichedPerson.name,
-          birth_year: enrichedPerson.birth_year,
-          homeworld: {
-            name: enrichedPerson.homeworldDetails.name,
-            terrain: enrichedPerson.homeworldDetails.terrain,
-          },
-        });
-      })
-    );
+  // Member function getPeople
+  async getPeople(page = 1): Promise<PeopleAppData> {
+    try {
+      // Fetch people data from the API using HttpService
+      const peopleResponse: PeopleResponse = await lastValueFrom(
+        this.httpService
+          .get(`${this.apiUrl}?page=${page}&limit=${this.FETCH_LIMIT}`)
+          .pipe(
+            map((res) => res.data),
+            catchError((error) => {
+              console.error('Error fetching people:', error.message);
+              throw new HttpException(
+                'Failed to fetch people',
+                HttpStatus.BAD_REQUEST
+              );
+            })
+          )
+      );
 
-    this.cache[page] = {
-      data: enrichedPeople,
-      total: response.data.count,
-    };
+      const people = peopleResponse.results;
 
-    return this.cache[page];
+      // Fetch and enrich each person's homeworld data
+      const personDetails = await Promise.all(
+        people.map(async (person) => await this.getPersonDetails(person.uid))
+      );
+
+      // Combine the person data with the homeworld data
+      return {
+        people: personDetails,
+        total: 1,
+      };
+    } catch (e: any) {
+      console.log(e);
+      throw new HttpException(
+        'Failed to fetch people',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 }
