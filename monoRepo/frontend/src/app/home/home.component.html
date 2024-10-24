@@ -1,1 +1,22 @@
 <app-header></app-header>
+<div class="p-4">
+  <div class="flex justify-end px-8">
+    <button
+      class="fixed bottom-4 right-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:bg-blue-300"
+      *ngIf="canFetchMore"
+      (click)="fetchNextPage()"
+      [disabled]="isLoading"
+    >
+      {{ isLoading ? 'Loading Data' : 'Load More' }}
+    </button>
+  </div>
+
+  <div>
+    {{ isLoading ? 'Data is loading...' : '' }}
+  </div>
+
+  <app-people
+    *ngFor="let person of filteredPeople"
+    [person]="person"
+  ></app-people>
+</div>
