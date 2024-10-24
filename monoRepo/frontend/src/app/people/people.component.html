@@ -1,1 +1,18 @@
-<p>people works!</p>
+<ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+  <li>
+    <div class="flex items-center justify-between">
+      <div class="flex items-center min-w-0">
+        <div class="ml-3">
+          <p>
+            Name:
+            {{ person.name }}
+          </p>
+          <p>Birth Year: {{ person.birth_year }}</p>
+          <p>Homeworld: {{ person.homeworld }}</p>
+          <p>Terrain: {{ person.terrain }}</p>
+        </div>
+      </div>
+    </div>
+    <hr />
+  </li>
+</ul>
