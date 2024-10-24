@@ -1,13 +1,13 @@
 <app-header></app-header>
-<div>
+<div class="p-4">
   <div class="flex justify-end px-8">
     <button
-      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      class="fixed bottom-4 right-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:bg-blue-300"
       *ngIf="canFetchMore"
       (click)="fetchNextPage()"
       [disabled]="isLoading"
     >
-      Load More
+      {{ isLoading ? 'Loading Data' : 'Load More' }}
     </button>
   </div>
 

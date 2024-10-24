@@ -7,13 +7,11 @@ import { PeopleAppData, Person } from '@mono-repo/shared';
 export class AppController {
   constructor(private readonly swapiService: SwapiService) {}
 
-  // Get people with pagination
   @Get()
   async getPeople(@Query('page') page: number): Promise<PeopleAppData> {
     return this.swapiService.getPeople(page || 1);
   }
 
-  // Get people by name
   @Get('search')
   async getPeopleByName(@Query('name') name: string): Promise<PeopleAppData> {
     return this.swapiService.getPeopleByName(name);

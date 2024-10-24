@@ -39,31 +39,6 @@ export class SwapiService {
     }
   }
 
-  async retry(fn: () => Promise<PeopleResponse>): Promise<PeopleResponse> {
-    let retries = 0;
-    while (retries < this.RETRY_LIMIT) {
-      console.log('RETRY: ', retries);
-      try {
-        return await fn();
-      } catch (e: any) {
-        retries++;
-        if (retries === this.RETRY_LIMIT) {
-          throw new HttpException(
-            'Failed to fetch people after retries',
-            HttpStatus.INTERNAL_SERVER_ERROR
-          );
-        }
-        await new Promise((resolve) =>
-          setTimeout(resolve, this.DELAY_BETWEEN_RETRIES)
-        );
-      }
-    }
-    throw new HttpException(
-      'Failed to fetch people after retries',
-      HttpStatus.INTERNAL_SERVER_ERROR
-    );
-  }
-
   // Initial fetch function for a page with caching
   async getPeople(page = 1): Promise<PeopleAppData> {
     try {
@@ -75,7 +50,9 @@ export class SwapiService {
         return cachedPeople;
       }
 
-      const peopleResponse = await this.retry(() => this.fetchPeople(page));
+      const peopleResponse = await this.retrySwapi(() =>
+        this.fetchPeople(page)
+      );
 
       const people = peopleResponse.results;
 
@@ -102,6 +79,7 @@ export class SwapiService {
     }
   }
 
+  // Fetch people by name and enrich's data with caching
   async getPeopleByName(name: string): Promise<PeopleAppData> {
     try {
       const cacheKey = `people_name_${name.toLowerCase()}`;
@@ -120,7 +98,6 @@ export class SwapiService {
 
       const people = peopleResponse.result;
 
-      // Fetch and enrich each person's homeworld data
       const personDetails = await Promise.all(
         people.map(async (person) => await this.getPersonDetails(person.uid))
       );
@@ -137,24 +114,12 @@ export class SwapiService {
 
       return dataToCache;
     } catch (e: any) {
-      this.swapiLogger.error('GetPeopleByName failed: ' + e.message, e.stack);
+      this.swapiLogger.error(
+        'Error fetching people by name: ' + e.message,
+        e.stack
+      );
       throw new HttpException(
         'Failed to fetch people by name',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  private async getHomeWorldName(url: string): Promise<HomeWorldResponse> {
-    try {
-      const homeworldInfo: HomeWorldResponse = await lastValueFrom(
-        this.httpService.get(url).pipe(map((res) => res.data.result.properties))
-      );
-      return homeworldInfo;
-    } catch (e: any) {
-      this.swapiLogger.error('Error fetching homeworld: ' + e.message, e.stack);
-      throw new HttpException(
-        'Failed to fetch homeworld',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -186,6 +151,21 @@ export class SwapiService {
     }
   }
 
+  private async getHomeWorldName(url: string): Promise<HomeWorldResponse> {
+    try {
+      const homeworldInfo: HomeWorldResponse = await lastValueFrom(
+        this.httpService.get(url).pipe(map((res) => res.data.result.properties))
+      );
+      return homeworldInfo;
+    } catch (e: any) {
+      this.swapiLogger.error('Error fetching homeworld: ' + e.message, e.stack);
+      throw new HttpException(
+        'Failed to fetch homeworld',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
   /**
    * JSON file-based cache
    * This approach is straightforward but may be harder to deploy in production environments compared to other solutions.
@@ -209,15 +189,13 @@ export class SwapiService {
         this.swapiLogger.warn('Cache file not found, creating a new one.');
       }
 
-      // Update cache with new data
       cache[cacheKey] = data;
       await writeFile(
         this.cacheFilePath,
         JSON.stringify(cache, null, 2),
         'utf8'
-      ); // Save the cache
+      );
     } catch (error: unknown) {
-      // Specify error type to avoid TypeScript error
       const message = error instanceof Error ? error.message : 'Unknown error';
       this.swapiLogger.error('Error saving cache: ' + message);
     }
@@ -234,5 +212,34 @@ export class SwapiService {
       );
       return null;
     }
+  }
+
+  /**
+   * Retry if swapi is not available
+   */
+
+  async retrySwapi(fn: () => Promise<PeopleResponse>): Promise<PeopleResponse> {
+    let retries = 0;
+    while (retries < this.RETRY_LIMIT) {
+      try {
+        return await fn();
+      } catch (e: any) {
+        retries++;
+        this.swapiLogger.warn(`Retrying fetch from swapi ${retries + 1}`);
+        if (retries === this.RETRY_LIMIT) {
+          throw new HttpException(
+            `Failed to fetch people after ${retries}: retries...`,
+            HttpStatus.INTERNAL_SERVER_ERROR
+          );
+        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, this.DELAY_BETWEEN_RETRIES)
+        );
+      }
+    }
+    throw new HttpException(
+      `Failed to fetch people after ${retries}: retries...`,
+      HttpStatus.INTERNAL_SERVER_ERROR
+    );
   }
 }

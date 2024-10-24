@@ -1,6 +1,6 @@
 <header>
   <div
-    class="navbar static flex flex-col sm:flex-row items-center justify-between max-width-client p-16"
+    class="navbar flex flex-col sm:flex-row items-center justify-between max-width-client p-4"
   >
     <div class="navbar__left mb-4 sm:mb-0">
       <img class="w-48" src="memberSpotLogo.svg" />
@@ -9,7 +9,9 @@
     <div class="navbar__right flex items-center justify-end">
       <div>
         <div
-          class="flex items-center px-3 py-2 border rounded-lg cursor-pointer"
+          class="flex items-center px-3 py-2 border rounded-lg cursor-pointer transition-all duration-300"
+          [ngClass]="{ 'fixed bg-white shadow-md w-full mt-4': isScrolled }"
+          (scroll)="onScroll($event)"
         >
           <mat-icon fontIcon="search"></mat-icon>
           <input
@@ -18,6 +20,7 @@
             [value]="filter$ | async"
             (input)="onFilterChange($event)"
             type="text"
+            [ngClass]="{ 'w-full': isScrolled, 'w-auto': !isScrolled }"
           />
         </div>
       </div>

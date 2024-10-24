@@ -11,9 +11,4 @@ export class FilterService {
   setFilter(value: string): void {
     this.filterSubject.next(value);
   }
-
-  getFilter(): string {
-    console.log('GET FILTER', this.filterSubject.getValue());
-    return this.filterSubject.getValue();
-  }
 }
